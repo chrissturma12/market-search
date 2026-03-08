@@ -1,0 +1,407 @@
+import { useState, useRef, useEffect } from "react";
+
+var SECTORS = [
+  { id:"ai_news", name:"AI Industry News", icon:"🤖", color:"#A855F7", desc:"Broad AI sector developments, breakthroughs, adoption trends",
+    topics:[
+      {id:"ain_break",label:"AI Breakthroughs",tickers:"MSFT, GOOGL, META, NVDA",query:"artificial intelligence breakthrough new AI model release capabilities"},
+      {id:"ain_adopt",label:"Enterprise AI Adoption",tickers:"MSFT, CRM, ORCL, PLTR, AI",query:"enterprise AI adoption spending corporate investment artificial intelligence"},
+      {id:"ain_open",label:"Open Source AI",tickers:"META, GOOGL",query:"open source AI model Llama Gemma Mistral Hugging Face"},
+      {id:"ain_agent",label:"AI Agents & Automation",tickers:"MSFT, GOOGL, CRM, PLTR",query:"AI agent autonomous automation agentic workflow enterprise"},
+      {id:"ain_fund",label:"AI Startup Funding",tickers:"",query:"AI startup funding venture capital Series A B unicorn valuation"},
+      {id:"ain_safety",label:"AI Safety & Ethics",tickers:"",query:"AI safety regulation ethics alignment responsible artificial intelligence"},
+      {id:"ain_china",label:"China AI Race",tickers:"BABA, BIDU, PDD",query:"China AI development DeepSeek Baidu Alibaba competition US"},
+    ]
+  },
+  { id:"ai_infra", name:"AI Infrastructure & Tech", icon:"🛰", color:"#6366F1", desc:"Chips, data centers, cloud, GPUs, servers, networking, memory",
+    topics:[
+      {id:"ait_gpu",label:"GPU & AI Chips",tickers:"NVDA, AMD, INTC, AVGO, MRVL, QCOM, ARM",query:"NVIDIA AMD Broadcom AI chip GPU revenue shipments data center"},
+      {id:"ait_dc",label:"Data Center Construction",tickers:"EQIX, DLR, QTS",query:"AI data center new site construction approved hyperscale campus gigawatt"},
+      {id:"ait_cloud",label:"Cloud & Hyperscaler Capex",tickers:"MSFT, GOOGL, AMZN, META, ORCL",query:"Microsoft Google Amazon Meta Oracle AI capital expenditure cloud spending"},
+      {id:"ait_power",label:"Power & Cooling",tickers:"VST, CEG, VRT, NRG, FSLR",query:"AI data center power demand nuclear Vistra Constellation Vertiv cooling"},
+      {id:"ait_net",label:"Networking & Interconnect",tickers:"ANET, CSCO, COHR, INFN",query:"Arista Cisco AI networking 800G ethernet InfiniBand optical interconnect"},
+      {id:"ait_mem",label:"Memory & Storage",tickers:"MU, WDC, STX",query:"Micron Samsung SK hynix SanDisk HBM HBF AI memory DRAM NAND"},
+      {id:"ait_srv",label:"Servers & OEMs",tickers:"DELL, HPE, SMCI",query:"Dell HPE Super Micro AI server GPU rack liquid cooling shipments"},
+      {id:"ait_emerge",label:"Emerging AI Infra",tickers:"APLD, NBIS, CRWV, IREN, CORZ",query:"CoreWeave Applied Digital Nebius AI infrastructure IPO GPU cloud"},
+      {id:"ait_edge",label:"Edge & Inference",tickers:"QCOM, ARM",query:"edge AI inference chip Groq ASIC on-device accelerator latency"},
+      {id:"ait_soft",label:"AI Software Platforms",tickers:"PLTR, AI, SNOW, DDOG",query:"Palantir C3ai Snowflake Datadog AI platform MLOps enterprise"},
+    ]
+  },
+  { id:"industrial", name:"Utilities & Industrials", icon:"🏭", color:"#D97706", desc:"Oil & gas, utilities, mining, shipping, building materials, heavy industry",
+    topics:[
+      {id:"ind_oil",label:"Oil & Gas Majors",tickers:"XOM, CVX, SHEL, BP, COP",query:"ExxonMobil Chevron Shell BP ConocoPhillips earnings production output"},
+      {id:"ind_drill",label:"Drilling & E&P",tickers:"EOG, DVN, FANG, HAL, SLB",query:"shale Permian drilling rig count Halliburton Schlumberger fracking"},
+      {id:"ind_mid",label:"Midstream & LNG",tickers:"ET, EPD, WMB, KMI",query:"midstream pipeline LNG export terminal natural gas infrastructure"},
+      {id:"ind_crude",label:"Crude & Gas Prices",tickers:"",query:"crude oil WTI Brent OPEC production cut natural gas Henry Hub"},
+      {id:"ind_util",label:"Electric Utilities",tickers:"NEE, DUK, SO, D, AEP, EXC",query:"NextEra Duke Southern Dominion electric utility rate case grid"},
+      {id:"ind_nuke",label:"Nuclear Renaissance",tickers:"CEG, VST, CCJ, SMR, OKLO",query:"nuclear power plant restart SMR uranium NuScale Oklo energy"},
+      {id:"ind_renew",label:"Renewables & Solar",tickers:"ENPH, SEDG, FSLR, BEP",query:"solar wind renewable energy IRA tax credit clean energy project"},
+      {id:"ind_mine",label:"Mining & Metals",tickers:"NEM, FCX, BHP, RIO, VALE",query:"gold copper lithium mining Newmont Freeport BHP Rio Tinto price"},
+      {id:"ind_steel",label:"Steel & Aluminum",tickers:"NUE, STLD, CLF, AA, X",query:"steel aluminum tariff Nucor Cleveland-Cliffs Alcoa US Steel price"},
+      {id:"ind_ship",label:"Shipping & Logistics",tickers:"UPS, FDX, UNP, CSX, ODFL",query:"UPS FedEx Union Pacific freight trucking shipping rates volume"},
+      {id:"ind_build",label:"Building Materials",tickers:"VMC, MLM, URI, PWR, J",query:"infrastructure construction building materials Vulcan Martin Marietta"},
+      {id:"ind_heavy",label:"Heavy Industry",tickers:"CAT, DE, HON, GE, EMR",query:"Caterpillar Deere Honeywell GE industrial orders manufacturing PMI"},
+    ]
+  },
+  { id:"finance", name:"Banking, Finance & Crypto", icon:"🏦", color:"#10B981", desc:"Banks, insurance, credit, fintech, crypto, private equity, Fed policy",
+    topics:[
+      {id:"fin_big",label:"Big Banks",tickers:"JPM, BAC, WFC, C, GS, MS",query:"JPMorgan Goldman Sachs Bank of America Wells Fargo Morgan Stanley earnings"},
+      {id:"fin_reg",label:"Regional Banks",tickers:"USB, PNC, TFC, SCHW, FITB",query:"regional bank deposits commercial real estate CRE exposure credit"},
+      {id:"fin_ins",label:"Insurance",tickers:"BRK.B, PGR, MET, ALL, AIG",query:"insurance premiums catastrophe losses underwriting Berkshire Progressive"},
+      {id:"fin_cred",label:"Credit & Consumer",tickers:"V, MA, AXP, DFS, COF",query:"credit card delinquency consumer spending loan growth Visa Mastercard"},
+      {id:"fin_fed",label:"Fed & Interest Rates",tickers:"",query:"Federal Reserve interest rate decision cut hold inflation employment"},
+      {id:"fin_pe",label:"Private Equity",tickers:"KKR, BX, APO, ARES, CG",query:"KKR Blackstone Apollo Ares private equity fundraising deal flow M&A"},
+      {id:"fin_fintech",label:"Fintech & Payments",tickers:"SQ, PYPL, AFRM, ADYEN, SOFI",query:"Square PayPal Affirm SoFi fintech payments digital banking"},
+      {id:"fin_btc",label:"Bitcoin & Crypto",tickers:"MSTR, MARA, RIOT, CLSK, COIN",query:"Bitcoin price ETF MicroStrategy Marathon mining Coinbase institutional"},
+      {id:"fin_defi",label:"DeFi & Altcoins",tickers:"",query:"Ethereum Solana DeFi altcoin staking crypto regulation stablecoin"},
+    ]
+  },
+  { id:"defense", name:"Defense & Gov Contracts", icon:"🛡", color:"#3B82F6", desc:"Defense primes, contractors, space, drones, government spending",
+    topics:[
+      {id:"def_prime",label:"Defense Primes",tickers:"LMT, RTX, NOC, GD, BA, LHX",query:"Lockheed Martin RTX Northrop Grumman General Dynamics defense contract award"},
+      {id:"def_budget",label:"Defense Budget",tickers:"",query:"defense budget Pentagon spending military appropriations NDAA Congress"},
+      {id:"def_space",label:"Space & Satellites",tickers:"RKLB, LUNR, ASTS, SPCE",query:"Rocket Lab SpaceX satellite launch defense space contract Space Force"},
+      {id:"def_drone",label:"Drones & UAV",tickers:"AVAV, KTOS, RCAT",query:"military drone autonomous weapons AeroVironment Kratos defense UAV"},
+      {id:"def_cyber",label:"Defense Cyber",tickers:"CRWD, PANW, BAH, LDOS",query:"defense cybersecurity Booz Allen Leidos CISA government cyber contract"},
+      {id:"def_ship",label:"Naval & Shipbuilding",tickers:"HII, GD, LMT",query:"Navy shipbuilding submarine destroyer frigate Huntington Ingalls contract"},
+      {id:"def_intl",label:"International Arms",tickers:"LMT, RTX, BA",query:"arms deal international defense sale NATO ally military export"},
+      {id:"def_ai",label:"AI in Defense",tickers:"PLTR, GOOG, MSFT",query:"AI military defense Palantir Project Maven autonomous weapons Pentagon AI"},
+    ]
+  },
+  { id:"realestate", name:"Real Estate & REITs", icon:"🏢", color:"#14B8A6", desc:"REITs, commercial, residential, housing market, data center REITs",
+    topics:[
+      {id:"re_reit",label:"Major REITs",tickers:"PLD, AMT, EQIX, O, SPG",query:"REIT Prologis American Tower Equinix Realty Income Simon Property earnings"},
+      {id:"re_cre",label:"Commercial & Office",tickers:"BXP, VNO, SLG, KRC",query:"commercial real estate office vacancy loan maturity default distressed"},
+      {id:"re_house",label:"Housing Market",tickers:"DHI, LEN, PHM, NVR, TOL",query:"housing market mortgage rate homebuilder new home sales inventory starts"},
+      {id:"re_mort",label:"Mortgage Rates",tickers:"",query:"mortgage rate 30 year fixed housing affordability refinance forecast"},
+      {id:"re_dc",label:"Data Center REITs",tickers:"EQIX, DLR, AMT",query:"data center REIT Equinix Digital Realty leasing AI hyperscale demand"},
+      {id:"re_indust",label:"Industrial & Warehouse",tickers:"PLD, REXR, STAG",query:"industrial warehouse REIT Prologis logistics ecommerce vacancy lease"},
+      {id:"re_retail",label:"Retail & Mall REITs",tickers:"SPG, MAC, KIM",query:"retail mall REIT Simon Macerich occupancy foot traffic rent"},
+    ]
+  },
+  { id:"consumer", name:"Consumer Goods & Retail", icon:"🛒", color:"#F97316", desc:"Retail, e-commerce, luxury, food & beverage, staples, consumer trends",
+    topics:[
+      {id:"con_ecom",label:"E-Commerce & Retail",tickers:"AMZN, WMT, COST, TGT, HD, LOW",query:"Amazon Walmart Costco Target Home Depot retail ecommerce sales earnings"},
+      {id:"con_luxury",label:"Luxury & Apparel",tickers:"NKE, LULU, TJX, RL, LVMHF",query:"Nike Lululemon luxury apparel LVMH fashion consumer demand spending"},
+      {id:"con_food",label:"Food & Beverage",tickers:"KO, PEP, MCD, SBUX, CMG",query:"Coca-Cola PepsiCo McDonalds Starbucks Chipotle food pricing sales"},
+      {id:"con_staple",label:"Consumer Staples",tickers:"PG, CL, KMB, GIS, K",query:"Procter Gamble Colgate Kimberly consumer staples pricing volume margin"},
+      {id:"con_auto",label:"Auto & Parts",tickers:"GM, F, TM, TSLA, STLA",query:"General Motors Ford Toyota auto sales inventory EV incentives NHTSA"},
+      {id:"con_sent",label:"Consumer Sentiment",tickers:"",query:"consumer confidence sentiment spending credit card data inflation savings"},
+      {id:"con_travel",label:"Travel & Leisure",tickers:"MAR, HLT, ABNB, BKNG, UAL",query:"travel hotel airline bookings Marriott Hilton Airbnb leisure demand"},
+    ]
+  },
+  { id:"healthcare", name:"Healthcare & BioPharma", icon:"🧬", color:"#EC4899", desc:"Big pharma, biotech, FDA, medical devices, drug research, GLP-1, clinical trials",
+    topics:[
+      {id:"hc_pharma",label:"Big Pharma",tickers:"LLY, NVO, JNJ, PFE, MRK, ABBV",query:"Eli Lilly Novo Nordisk Johnson Pfizer Merck AbbVie drug approval earnings"},
+      {id:"hc_bio",label:"Biotech & Gene Therapy",tickers:"AMGN, GILD, VRTX, REGN, BIIB",query:"biotech gene therapy CRISPR FDA approval clinical trial breakthrough"},
+      {id:"hc_device",label:"Medical Devices",tickers:"ABT, MDT, SYK, ISRG, BSX",query:"medical device robotic surgery Intuitive Abbott Medtronic Stryker FDA"},
+      {id:"hc_glp1",label:"GLP-1 & Obesity",tickers:"LLY, NVO, AMGN, VKTX",query:"GLP-1 Ozempic Wegovy Mounjaro Zepbound obesity weight loss drug shortage"},
+      {id:"hc_trial",label:"Clinical Trials & FDA",tickers:"",query:"FDA drug approval clinical trial Phase 3 results breakthrough therapy"},
+      {id:"hc_onc",label:"Oncology",tickers:"MRK, REGN, BMY, AZN",query:"cancer immunotherapy oncology drug Keytruda checkpoint inhibitor trial"},
+      {id:"hc_cdmo",label:"Drug Manufacturing",tickers:"TMO, DHR, WST, CRL",query:"CDMO pharma manufacturing Thermo Fisher Danaher contract drug production"},
+      {id:"hc_ai",label:"AI in Healthcare",tickers:"ISRG, VEEV, DOCS",query:"AI healthcare drug discovery diagnostics clinical trial artificial intelligence"},
+    ]
+  },
+  { id:"political", name:"Political & M&A News", icon:"⚖️", color:"#EF4444", desc:"Politics affecting markets, tariffs, regulation, mergers & acquisitions",
+    topics:[
+      {id:"pol_tariff",label:"Tariffs & Trade War",tickers:"",query:"tariff trade war China US import duty exemption retaliation impact markets"},
+      {id:"pol_tax",label:"Tax & Fiscal Policy",tickers:"",query:"tax policy legislation corporate tax rate capital gains fiscal spending bill"},
+      {id:"pol_reg",label:"Regulation & Antitrust",tickers:"GOOGL, META, AMZN, AAPL",query:"antitrust regulation Big Tech FTC DOJ monopoly breakup enforcement"},
+      {id:"pol_fed",label:"Fed & Monetary Policy",tickers:"",query:"Federal Reserve rate decision Powell inflation employment monetary policy impact"},
+      {id:"pol_geo",label:"Geopolitics & Markets",tickers:"",query:"geopolitical risk market impact sanctions war conflict oil supply disruption"},
+      {id:"pol_energy",label:"Energy Policy",tickers:"",query:"energy policy oil gas drilling permits IRA clean energy regulation"},
+      {id:"pol_ma",label:"Mergers & Acquisitions",tickers:"",query:"merger acquisition deal announced M&A corporate buyout takeover billion"},
+      {id:"pol_ipo",label:"IPOs & Listings",tickers:"",query:"IPO initial public offering stock listing SPAC direct new company market"},
+      {id:"pol_elect",label:"Elections & Markets",tickers:"",query:"election politics market impact policy candidate regulation investor sentiment"},
+      {id:"pol_crypto",label:"Crypto Regulation",tickers:"COIN",query:"cryptocurrency regulation SEC stablecoin legislation Bitcoin policy"},
+    ]
+  },
+];
+
+var API="https://api.anthropic.com/v1/messages";
+var PARALLEL=3;
+var GAP=1500;
+
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+function tryJSON(t){
+  if(!t)return null;
+  var c=t.replace(/```json/gi,"").replace(/```/gi,"").trim();
+  try{return JSON.parse(c);}catch(e){}
+  var s=c.indexOf("{");if(s<0)return null;
+  var d=0;
+  for(var i=s;i<c.length;i++){if(c[i]==="{")d++;if(c[i]==="}")d--;if(d===0){try{return JSON.parse(c.substring(s,i+1));}catch(e2){return null;}}}
+  return null;
+}
+function getURLs(c){try{var s=JSON.stringify(c);var m=s.match(/https?:\/\/[^\s"'<>\\)}\]]+/g)||[];var o=[],seen={};for(var i=0;i<m.length;i++)if(m[i].length<250&&!seen[m[i]]&&m[i].indexOf("anthropic")<0&&m[i].indexOf("googleapis")<0){seen[m[i]]=true;o.push(m[i]);}return o;}catch(e){return[];}}
+function getTexts(c){var o="";if(!c)return o;for(var i=0;i<c.length;i++)if(c[i].type==="text"&&c[i].text)o+=c[i].text+"\n";return o;}
+
+async function doScan(topic){
+  var yr=new Date().getFullYear();
+  var q=topic.query+" "+yr;
+  for(var a=0;a<2;a++){
+    if(a>0)await sleep(6000);
+    try{
+      var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",max_tokens:900,
+        tools:[{type:"web_search_20250305",name:"web_search"}],
+        messages:[{role:"user",content:"Search web: "+q+"\nTickers: "+(topic.tickers||"sector")+
+          '\nReturn ONLY JSON:\n{"headline":"takeaway","items":[{"title":"title","summary":"2-3 sentences","sentiment":"bullish/bearish/neutral","relevance":"high/medium/low","tickers":["X"],"source":"name","url":"https://url"}],"signal":"signal"}\n3-5 items. Real URLs. JSON only.'}]
+      })});
+      if(r.status===429||r.status===529){if(a<1)continue;return{ok:false,err:"Rate limited"};}
+      if(!r.ok)return{ok:false,err:"HTTP "+r.status};
+      var json=await r.json();var text=getTexts(json.content);var urls=getURLs(json.content);var parsed=tryJSON(text);
+      if(parsed&&parsed.items&&parsed.items.length>0){
+        for(var k=0;k<parsed.items.length;k++){var it=parsed.items[k];if(!it.url||it.url.indexOf("http")!==0)it.url=urls[k]||urls[0]||"";if(!it.tickers)it.tickers=[];if(!it.sentiment)it.sentiment="neutral";if(!it.relevance)it.relevance="medium";}
+        return{ok:true,data:parsed};
+      }
+      if(text.length>30&&a<1)continue;
+      if(text.length>30){var tks=topic.tickers?topic.tickers.split(",").map(function(x){return x.trim();}).slice(0,3):[];return{ok:true,data:{headline:topic.label,signal:"Raw",items:[{title:topic.label,summary:text.replace(/[{}"[\]]/g," ").replace(/\s+/g," ").trim().slice(0,350),sentiment:"neutral",relevance:"medium",tickers:tks,source:"Web",url:urls[0]||""}]}};}
+      if(a<1)continue;return{ok:false,err:"Empty"};
+    }catch(err){if(a<1)continue;return{ok:false,err:err.message};}
+  }
+  return{ok:false,err:"Failed"};
+}
+
+async function runBatch(topics,onResult,onLog,stopRef){
+  var i=0;
+  while(i<topics.length){
+    if(stopRef.current)break;
+    var batch=topics.slice(i,i+PARALLEL);
+    onLog("⚡ "+batch.map(function(t){return t.label;}).join(", "));
+    await Promise.all(batch.map(function(t){return doScan(t).then(function(r){onResult(t,r);});}));
+    i+=PARALLEL;
+    if(i<topics.length&&!stopRef.current)await sleep(GAP);
+  }
+}
+
+async function loadS(k,fb){try{if(!window.storage)return fb;var r=await window.storage.get(k);return r?JSON.parse(r.value):fb;}catch(e){return fb;}}
+async function saveS(k,v){try{if(window.storage)await window.storage.set(k,JSON.stringify(v));}catch(e){}}
+
+export default function App(){
+  var s1=useState(null);var view=s1[0];var setView=s1[1]; // null=home, sector id=scanner
+  var s2=useState({});var results=s2[0];var setResults=s2[1];
+  var s3=useState([]);var order=s3[0];var setOrder=s3[1];
+  var s4=useState({done:0,total:0});var prog=s4[0];var setProg=s4[1];
+  var s5=useState([]);var logs=s5[0];var setLogs=s5[1];
+  var s6=useState(false);var logVis=s6[0];var setLogVis=s6[1];
+  var s7=useState([]);var errs=s7[0];var setErrs=s7[1];
+  var s8=useState({});var votes=s8[0];var setVotes=s8[1];
+  var s9=useState(false);var running=s9[0];var setRunning=s9[1];
+  var s10=useState({});var opened=s10[0];var setOpened=s10[1];
+  var s11=useState(null);var startT=s11[0];var setStartT=s11[1];
+  var s12=useState(0);var elapsed=s12[0];var setElapsed=s12[1];
+  var s13=useState("");var tkFilter=s13[0];var setTkFilter=s13[1];
+  var stopRef=useRef(false);
+
+  useEffect(function(){loadS("mss-votes",{}).then(function(v){setVotes(v);});},[]);
+  useEffect(function(){if(!startT)return;var iv=setInterval(function(){setElapsed(Math.round((Date.now()-startT)/1000));},1000);return function(){clearInterval(iv);};},[startT]);
+
+  function log(m){var t=new Date().toLocaleTimeString();setLogs(function(p){return p.concat([t+" "+m]).slice(-40);});}
+
+  function handleResult(topic,res){
+    setProg(function(p){return{done:p.done+1,total:p.total};});
+    if(res.ok){
+      setResults(function(p){var n=Object.assign({},p);n[topic.id]=res.data;return n;});
+      setOrder(function(p){return p.filter(function(x){return x!==topic.id;}).concat([topic.id]);});
+      log("✅ "+topic.label+" ("+res.data.items.length+")");
+    }else{
+      log("❌ "+topic.label+": "+res.err);
+      setErrs(function(p){return p.concat([topic.label]);});
+    }
+  }
+
+  function currentSector(){
+    for(var i=0;i<SECTORS.length;i++) if(SECTORS[i].id===view) return SECTORS[i];
+    return null;
+  }
+
+  async function scanSector(){
+    var sec=currentSector();if(!sec)return;
+    stopRef.current=false;
+    setResults({});setOrder([]);setErrs([]);setRunning(true);setStartT(Date.now());setElapsed(0);
+    setProg({done:0,total:sec.topics.length});
+    log("🚀 "+sec.name+" ("+sec.topics.length+" topics, "+PARALLEL+"x parallel)");
+    await runBatch(sec.topics,handleResult,log,stopRef);
+    setRunning(false);setStartT(null);
+    log("🏁 "+sec.name+" done");
+  }
+
+  async function scanOne(topic){
+    setRunning(true);setProg(function(p){return{done:p.done,total:p.total+1};});
+    log("⏳ "+topic.label);
+    var res=await doScan(topic);handleResult(topic,res);
+    setRunning(false);
+  }
+
+  function doVote(tid,title,dir){
+    var key=tid+"|"+(title||"").slice(0,25);
+    setVotes(function(p){var c=Object.assign({},p);c[key]=dir;saveS("mss-votes",c);return c;});
+  }
+  function getVote(tid,title){return votes[tid+"|"+(title||"").slice(0,25)]||null;}
+
+  var nB=0,nR=0,nN=0,nI=0,tkS={};
+  var rk=Object.keys(results);
+  for(var i=0;i<rk.length;i++){var its=(results[rk[i]]||{}).items||[];for(var j=0;j<its.length;j++){nI++;if(its[j].sentiment==="bullish")nB++;else if(its[j].sentiment==="bearish")nR++;else nN++;for(var k=0;k<(its[j].tickers||[]).length;k++)tkS[its[j].tickers[k]]=true;}}
+
+  var ft=tkFilter.trim().toUpperCase();
+  var vis=[];
+  for(var oi=0;oi<order.length;oi++){
+    var oid=order[oi];
+    if(ft){var fnd=false;var ois=(results[oid]||{}).items||[];for(var ok=0;ok<ois.length&&!fnd;ok++)for(var ol=0;ol<(ois[ok].tickers||[]).length;ol++)if(ois[ok].tickers[ol].toUpperCase().indexOf(ft)>=0)fnd=true;if(!fnd)continue;}
+    vis.push(oid);
+  }
+
+  var mono="'JetBrains Mono',monospace";
+  var sec=currentSector();
+
+  // ═══ HOME SCREEN ═══
+  if(!view){
+    return(
+      <div style={{minHeight:"100vh",background:"#07070B",color:"#D4D4D8",fontFamily:"system-ui,sans-serif"}}>
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+        <div style={{maxWidth:900,margin:"0 auto",padding:"40px 20px"}}>
+          <div style={{textAlign:"center",marginBottom:36}}>
+            <div style={{fontSize:32,marginBottom:8}}>📊</div>
+            <h1 style={{fontSize:22,fontWeight:700,color:"#FAFAFA",margin:"0 0 6px"}}>Market Intelligence Hub</h1>
+            <p style={{fontSize:11,color:"#525280",fontFamily:mono,margin:0}}>9 focused sector scanners · {PARALLEL}x parallel · Deep topic coverage</p>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
+            {SECTORS.map(function(s){
+              return(
+                <button key={s.id} onClick={function(){setView(s.id);setResults({});setOrder([]);setErrs([]);setLogs([]);}}
+                  style={{background:"#0C0C14",border:"1px solid #18182B",borderRadius:10,padding:"16px 18px",cursor:"pointer",textAlign:"left",transition:"all 0.15s",borderLeft:"3px solid "+s.color}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                    <span style={{fontSize:22}}>{s.icon}</span>
+                    <span style={{fontSize:14,fontWeight:600,color:"#FAFAFA"}}>{s.name}</span>
+                  </div>
+                  <p style={{fontSize:10,color:"#71717A",margin:"0 0 8px",lineHeight:1.5}}>{s.desc}</p>
+                  <div style={{fontSize:9,color:s.color,fontFamily:mono,fontWeight:600}}>{s.topics.length} topics ready →</div>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{textAlign:"center",marginTop:28,fontSize:8,color:"#2A2A3E",fontFamily:mono}}>
+            Click a sector to open its dedicated scanner · Results load 3 at a time
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ═══ SECTOR SCANNER ═══
+  return(
+    <div style={{minHeight:"100vh",background:"#07070B",color:"#D4D4D8",fontFamily:"system-ui,sans-serif"}}>
+      <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+
+      <div style={{background:"#0B0B12",borderBottom:"1px solid #18182B",padding:"10px 16px",position:"sticky",top:0,zIndex:100}}>
+        <div style={{maxWidth:1400,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={function(){setView(null);stopRef.current=true;setRunning(false);}} style={{background:"transparent",border:"1px solid #18182B",borderRadius:4,padding:"4px 8px",fontSize:10,color:"#71717A",cursor:"pointer"}}>← Back</button>
+            <span style={{fontSize:16}}>{sec?sec.icon:""}</span>
+            <div>
+              <div style={{fontSize:14,fontWeight:700,color:"#FAFAFA"}}>{sec?sec.name:""}</div>
+              <div style={{fontSize:8,color:"#525280",fontFamily:mono}}>{sec?sec.topics.length:0} topics · {PARALLEL}x parallel</div>
+            </div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+            <input value={tkFilter} onChange={function(e){setTkFilter(e.target.value);}} placeholder="Ticker..." style={{background:"#111118",border:"1px solid #18182B",borderRadius:4,padding:"4px 8px",fontSize:10,color:"#E5E5E5",fontFamily:mono,width:80,outline:"none"}}/>
+            <button onClick={function(){setLogVis(!logVis);}} style={{background:logVis?"#18182B":"transparent",border:"1px solid #18182B",borderRadius:4,padding:"4px 7px",fontSize:8,color:"#525280",cursor:"pointer"}}>LOG</button>
+            {running&&<span style={{fontSize:9,color:"#818CF8",fontFamily:mono}}>{prog.done}/{prog.total}</span>}
+            {running&&elapsed>0&&<span style={{fontSize:9,color:"#525280",fontFamily:mono}}>{elapsed}s</span>}
+            {running&&<button onClick={function(){stopRef.current=true;log("⏹");setRunning(false);}} style={{background:"#1C1017",color:"#F87171",border:"1px solid #7F1D1D44",padding:"4px 10px",fontSize:10,fontWeight:600,borderRadius:4,cursor:"pointer"}}>■</button>}
+            <button onClick={scanSector} disabled={running} style={{background:running?"#18182B":"linear-gradient(135deg,"+((sec?sec.color:"#6366F1")+",#8B5CF6)"),color:running?"#525280":"#FFF",border:"none",padding:"5px 14px",fontSize:10,fontWeight:600,borderRadius:4,cursor:running?"not-allowed":"pointer"}}>
+              {running?"⏳ Scanning...":"▶ SCAN ALL TOPICS"}
+            </button>
+          </div>
+        </div>
+        {running&&<div style={{maxWidth:1400,margin:"6px auto 0",height:3,background:"#18182B",borderRadius:2,overflow:"hidden"}}><div style={{height:"100%",width:(prog.done/(prog.total||1)*100)+"%",background:"linear-gradient(90deg,"+(sec?sec.color:"#6366F1")+",#EC4899)",transition:"width 0.3s"}}/></div>}
+      </div>
+
+      <div style={{maxWidth:1400,margin:"0 auto",padding:"12px 16px"}}>
+
+        {logVis&&<div style={{background:"#0A0A12",border:"1px solid #18182B",borderRadius:6,padding:"6px 10px",marginBottom:10,maxHeight:120,overflowY:"auto",fontSize:9,fontFamily:mono,color:"#71717A",lineHeight:1.7}}>{logs.length===0?"Waiting...":logs.map(function(l,i){return <div key={i}>{l}</div>;})}</div>}
+
+        {/* Topic chips */}
+        {sec&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:12}}>
+          {sec.topics.map(function(t){
+            return <button key={t.id} onClick={function(){if(!running)scanOne(t);}}
+              style={{background:results[t.id]?"#12121C":"#0A0A10",border:"1px solid "+(results[t.id]?(sec.color+"33"):"#18182B"),color:results[t.id]?sec.color:"#52525B",padding:"3px 8px",borderRadius:4,fontSize:9,cursor:running?"not-allowed":"pointer"}}>
+              {results[t.id]?"✓":"○"} {t.label}
+            </button>;
+          })}
+        </div>}
+
+        {nI>0&&<div style={{display:"flex",gap:10,padding:"7px 12px",background:"#0A0A12",border:"1px solid #18182B",borderRadius:5,marginBottom:10,flexWrap:"wrap",fontSize:10,fontFamily:mono}}>
+          <span style={{color:"#4ADE80",fontWeight:600}}>▲{nB}</span>
+          <span style={{color:"#F87171",fontWeight:600}}>▼{nR}</span>
+          <span style={{color:"#A8A29E",fontWeight:600}}>—{nN}</span>
+          <span style={{color:"#525280"}}>{nI} items · {Object.keys(tkS).length} tickers</span>
+          {!running&&elapsed>0&&<span style={{color:sec?sec.color:"#818CF8",marginLeft:"auto"}}>⚡ {elapsed}s</span>}
+        </div>}
+
+        {errs.length>0&&<div style={{background:"#1C0A0A",border:"1px solid #7F1D1D33",borderRadius:5,padding:"6px 10px",marginBottom:8,fontSize:9,color:"#FCA5A5",fontFamily:mono}}>Issues: {errs.filter(function(v,i,a){return a.indexOf(v)===i;}).join(", ")}</div>}
+
+        {order.length===0&&!running&&<div style={{textAlign:"center",padding:"50px 20px"}}>
+          <div style={{fontSize:36,opacity:0.4}}>{sec?sec.icon:"📊"}</div>
+          <div style={{fontSize:13,fontWeight:600,color:"#52525B",marginTop:8}}>{sec?sec.name:""}</div>
+          <div style={{fontSize:10,color:"#3F3F50",fontFamily:mono,marginTop:6}}>Hit "SCAN ALL TOPICS" or click individual topics above</div>
+        </div>}
+
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(420px,1fr))",gap:10}}>
+          {vis.map(function(tid){
+            var top=null;if(sec)for(var j=0;j<sec.topics.length;j++)if(sec.topics[j].id===tid)top=sec.topics[j];
+            var dat=results[tid];if(!top||!dat)return null;
+            var isOpen=opened[tid]!==false;var items=dat.items||[];
+            return(
+              <div key={tid} style={{background:"#0C0C14",border:"1px solid #18182B",borderRadius:7,overflow:"hidden"}}>
+                <div onClick={function(){setOpened(function(p){var n=Object.assign({},p);n[tid]=!isOpen;return n;});}}
+                  style={{padding:"8px 12px",borderBottom:isOpen?"1px solid #18182B":"none",display:"flex",alignItems:"center",gap:5,cursor:"pointer"}}>
+                  <span style={{fontSize:10.5,fontWeight:600,color:sec?sec.color:"#818CF8"}}>{top.label}</span>
+                  {top.tickers&&<span style={{fontSize:7,color:"#3F3F50",fontFamily:mono}}>{top.tickers}</span>}
+                  <span style={{flex:1}}/>
+                  <span style={{fontSize:8,color:"#3F3F50",fontFamily:mono}}>{items.length} {isOpen?"▾":"▸"}</span>
+                </div>
+                {isOpen&&<div>
+                  {dat.headline&&<div style={{padding:"6px 12px 2px",fontSize:11,fontWeight:500,color:"#D4D4D8"}}>{dat.headline}</div>}
+                  <div style={{padding:"4px 12px 8px"}}>
+                    {items.map(function(item,idx){
+                      var vote=getVote(tid,item.title);
+                      var sC=item.sentiment==="bullish"?"#4ADE80":item.sentiment==="bearish"?"#F87171":"#A8A29E";
+                      var sB=item.sentiment==="bullish"?"#052E16":item.sentiment==="bearish"?"#450A0A":"#1C1917";
+                      var sL=item.sentiment==="bullish"?"▲":item.sentiment==="bearish"?"▼":"—";
+                      var rC=item.relevance==="high"?"#EF4444":item.relevance==="medium"?"#F59E0B":"#525280";
+                      return(
+                        <div key={idx} style={{padding:"6px 0",borderBottom:idx<items.length-1?"1px solid #0F0F1C":"none"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
+                            <span style={{width:6,height:6,borderRadius:"50%",background:rC,display:"inline-block"}}/>
+                            <span style={{fontSize:10.5,fontWeight:600,color:"#E4E4E7",flex:1,minWidth:50}}>{item.title}</span>
+                            <span style={{background:sB,color:sC,padding:"1px 6px",borderRadius:3,fontSize:9,fontWeight:700,fontFamily:mono}}>{sL}</span>
+                          </div>
+                          <p style={{fontSize:10,color:"#A1A1AA",margin:"2px 0 0 10px",lineHeight:1.45}}>{item.summary}</p>
+                          <div style={{display:"flex",alignItems:"center",gap:3,marginLeft:10,marginTop:3,flexWrap:"wrap"}}>
+                            {(item.tickers||[]).map(function(t,j){return <span key={j} style={{background:"#14142B",color:"#818CF8",padding:"1px 4px",borderRadius:2,fontSize:7,fontWeight:600,fontFamily:mono}}>${t}</span>;})}
+                            <button onClick={function(ev){ev.stopPropagation();doVote(tid,item.title,"up");}}
+                              style={{background:vote==="up"?"#052E16":"transparent",border:"1px solid "+(vote==="up"?"#4ADE8044":"#18182B"),borderRadius:3,padding:"1px 5px",fontSize:10,cursor:"pointer",color:vote==="up"?"#4ADE80":"#525280",marginLeft:4,lineHeight:1}}>👍</button>
+                            <button onClick={function(ev){ev.stopPropagation();doVote(tid,item.title,"down");}}
+                              style={{background:vote==="down"?"#450A0A":"transparent",border:"1px solid "+(vote==="down"?"#F8717144":"#18182B"),borderRadius:3,padding:"1px 5px",fontSize:10,cursor:"pointer",color:vote==="down"?"#F87171":"#525280",lineHeight:1}}>👎</button>
+                            <span style={{flex:1}}/>
+                            {item.source&&<span style={{fontSize:7,color:"#3F3F50",fontFamily:mono}}>{item.source}</span>}
+                            {item.url&&item.url.indexOf("http")===0&&(
+                              <a href={item.url} target="_blank" rel="noopener noreferrer"
+                                style={{fontSize:7,fontWeight:700,fontFamily:mono,color:sec?sec.color:"#818CF8",textDecoration:"none",background:(sec?sec.color:"#818CF8")+"14",border:"1px solid "+(sec?sec.color:"#818CF8")+"30",padding:"1px 6px",borderRadius:3}}>↗ SRC</a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {dat.signal&&<div style={{padding:"5px 12px 8px",borderTop:"1px solid #0F0F1C",fontSize:9,color:"#71717A",fontFamily:mono}}><span style={{color:sec?sec.color:"#818CF8",fontWeight:700}}>SIGNAL:</span> {dat.signal}</div>}
+                </div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
